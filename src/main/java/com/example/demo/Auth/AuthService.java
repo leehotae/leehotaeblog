@@ -122,26 +122,26 @@ user.setPassword(bCryptPasswordEncoder.encode(password));
 			user.setProfileImageUrl(imageService.이미지저장(image));
 		}
 
-		if(!(user2==null))
+		if(!(user2==null)) //dto.username을 가지는 user2가 현재 존재한다면
 		{
-			if((!user2.getUsername().equals(user.getUsername())))
+			if((!user2.getUsername().equals(user.getUsername()))) // dto.email로 찾은 user와 dto.username으로 찾은 user2가 서로 다른 user라면
 				
 			{
 				
-				if(userInvalidityCheck(user2))
+				if(userInvalidityCheck(user2))//user2가 invalid(토큰검증도 되지않았고 토큰 유효시간(이메일 )도 초과한 경우)하다면 
 				{			
-					userRepository.delete(user2);
+					userRepository.delete(user2); //user2를 삭제한다.
 					userRepository.flush();		
 				}
 				else
 				{
-					throw new CustomException("이미 존재하는 username입니다.",HttpStatus.CONFLICT);
+					throw new CustomException("이미 존재하는 username입니다.",HttpStatus.CONFLICT);//user2가 유효한 경우이므로 username 중복에러를 발생
 				}
 				
 		}
 		}
 		
-		user.setUsername(dto.getUsername());
+		user.setUsername(dto.getUsername());//이 코드까지 에러없이 왔다면 dto.username으로 변경을 한다.
 		
 	
 		if(!(dto.getPassword()==null))
@@ -151,7 +151,7 @@ user.setPassword(bCryptPasswordEncoder.encode(password));
 	
 	
 	
-	private boolean userInvalidityCheck(User user)
+	private boolean userInvalidityCheck(User user)//인자로 받은 user가 토큰 증명이 되지 않았고 토큰 유효시간도 지났다면 invalid한 user이다.
 	{
 	return 	Duration.between(user.getCreateDate(),LocalDateTime.now()).getSeconds()>Constants.ACTIVATION_EMAIL_EFFECTIVE_SECONDS && !user.isVerificationTokenCheck();
 	}
@@ -164,31 +164,34 @@ user.setPassword(bCryptPasswordEncoder.encode(password));
 		User user=userRepository.findByEmail(userdto.getEmail()).orElse(null);
 		User user2=userRepository.findByUsername(userdto.getUsername()).orElse(null);
 		
-		if (user!=null)
+		if (user!=null) //dto.email을 가지는 user가 현재 존재한다면
 		{
-			if (user.isVerificationTokenCheck())
-				throw new CustomException("이미 회원가입 되어있습니다.",HttpStatus.CONFLICT);
+			if (user.isVerificationTokenCheck())//user가 토큰검증이 끝난 상태라면
+				throw new CustomException("이미 회원가입 되어있습니다.",HttpStatus.CONFLICT);// email 중복에러 발생
 			else
 			{		
-				if (user2==null)
+				if (user2==null)//dto.username을 가지는 user2가 없다면
 				{
+				
 					user.setEmail(userdto.getEmail());
-					user.setUsername(userdto.getUsername());
-					user.setPassword(bCryptPasswordEncoder.encode(userdto.getPassword()));
-					user.setCreateDate(LocalDateTime.now());
+					user.setUsername(userdto.getUsername());//dto로 받은 username으로 user의 username 변경 
+					user.setPassword(bCryptPasswordEncoder.encode(userdto.getPassword()));//dto로 받은 password로 user의 password 변경 
+					user.setCreateDate(LocalDateTime.now());//user의 createdate를 현재시간으로 업데이트시킴
+					
 				}
-				else
+				else//dto.username을 가지는 user2가 현재 존재한다면
 				{
 					
-					if(userInvalidityCheck(user2))
+					if(userInvalidityCheck(user2))//user2가 invalid(토큰검증도 되지않았고 토큰 유효시간(이메일 )도 초과한 경우)하다면
 					{
-						if (user2.getUsername().equals(user.getUsername()))
+						if (user2.getUsername().equals(user.getUsername()))//dto.username으로 찾은 user2와 dto.email로 찾은 user가 동일 user라면
 						{
-							user.setPassword(bCryptPasswordEncoder.encode(userdto.getPassword()));
-							user.setCreateDate(LocalDateTime.now());
+							user.setPassword(bCryptPasswordEncoder.encode(userdto.getPassword())); //user의 패스워드 변경
+							user.setCreateDate(LocalDateTime.now());//user의 createdate를 현재시간으로 업데이트시킴
 						}
-						else
+						else//user2와 user가 동일 user가 아닌경우 (user2는 invalid)
 						{
+						//invalid한 user2를 삭제하고 user를 dto.username으로 update시킴, password와 createdate도 갱신
 						userRepository.delete(user2);
 						userRepository.flush();
 						user.setUsername(userdto.getUsername());
@@ -196,9 +199,9 @@ user.setPassword(bCryptPasswordEncoder.encode(password));
 						user.setCreateDate(LocalDateTime.now());
 						}
 					}
-					else
+					else//user2가 이미 토큰검증이 끝난경우
 					{
-						throw new CustomException("이미 존재하는 username입니다",HttpStatus.CONFLICT);
+						throw new CustomException("이미 존재하는 username입니다",HttpStatus.CONFLICT);//username 중복에러발생
 					}
 					
 				}
@@ -207,10 +210,11 @@ user.setPassword(bCryptPasswordEncoder.encode(password));
 			
 			
 		}
-		else
+		else//dto.email로 찾은 user가 없는 경우 (아예 처음부터 회원가입하는 경우)
 		{
-if(user2==null)
+if(user2==null)//dto.username으로 찾은 user2도 없는경우
 {
+//dto로 받은 user 정보로 회원가입
 			user=new User();
 		user.setEmail(userdto.getEmail());
 		user.setUsername(userdto.getUsername());
@@ -219,11 +223,12 @@ if(user2==null)
 		userRepository.save(user);
 		}
 
-else
+else//user2가 있는경우
 {
 	
-	if(userInvalidityCheck(user2))
+	if(userInvalidityCheck(user2))//user2가 invalid 하다면
 	{
+	//user2 삭제 시키고 user 회원가입
 		userRepository.delete(user2);
 		userRepository.flush();
 		user=new User();
@@ -233,14 +238,16 @@ else
 		user.setVerificationTokenCheck(false);
 		userRepository.save(user);
 	}
-	else
+	else//user2가 토큰검증이 이미 끝난 상태라면
 	{
-		throw new CustomException("이미 존재하는 username입니다",HttpStatus.CONFLICT);
+		throw new CustomException("이미 존재하는 username입니다",HttpStatus.CONFLICT);//username 중복에러 발생
 	}
 	
 }
 		}
 
+
+//여기 까지 에러없이 왔다면 회원가입 
 		String token=generateVerificationToken(user);
 		String link =HostEnviroment.SERVER_HOST+Constants.ACTIVATE_EMAIL_PATH+"/"+token;
 		String messasge=mailContentBuilder.build(link,"activateEmail");
