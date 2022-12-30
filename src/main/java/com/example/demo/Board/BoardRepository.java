@@ -18,6 +18,6 @@ public interface BoardRepository extends JpaRepository<Board,Long>{
 
 	
 	
-	@Query(value="SELECT * FROM BOARD WHERE title LIKE %?1%",nativeQuery = true)
+	@Query(value="SELECT * FROM board WHERE title LIKE %?1%",nativeQuery = true)
 	Page<Board> findByTitle(String title,Pageable pageable);
 }
